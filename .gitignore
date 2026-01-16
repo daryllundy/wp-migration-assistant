@@ -15,6 +15,7 @@ htmlcov/
 .tox/
 docker-compose.override.yml
 secrets/
+vendor/
 *.pem
 *.key
 *.crt

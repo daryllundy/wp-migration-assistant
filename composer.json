@@ -1,5 +1,5 @@
 {
-    "name": "wp-migration-assistant",
+    "name": "daryl/wp-migration-assistant",
     "description": "WordPress site migration tool with hosting provider profiles",
     "type": "project",
     "version": "1.0.0",
