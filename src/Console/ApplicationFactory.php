@@ -21,6 +21,7 @@ use WPMigration\Console\Command\ReportCommand;
 use WPMigration\Console\Command\RollbackCommand;
 use WPMigration\Console\Command\SecurityScanCommand;
 use WPMigration\Console\Command\SetupCdnCommand;
+use WPMigration\Console\Command\SetupCommand;
 use WPMigration\Console\Command\StagingCommand;
 use WPMigration\Console\Command\StatusCommand;
 use WPMigration\Console\Command\TestWebhookCommand;
@@ -86,6 +87,7 @@ final class ApplicationFactory
         $securityScanner = new SecurityScanner();
 
         $application = new Application('WP Migration Assistant', '1.0.0');
+        $application->add(new SetupCommand($rootPath));
         $application->add(new AnalyzeCommand($siteAnalyzer, $providerRegistry));
         $application->add(new PlanCommand($planner));
         $application->add(new MigrateCommand($planner, $runner, $repository));
