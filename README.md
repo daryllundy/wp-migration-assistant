@@ -483,7 +483,7 @@ php vendor/bin/phpunit
 php vendor/bin/phpstan analyze
 
 # Run code formatting
-php vendor/bin/php-cs-fixer fix
+composer run cs-fix
 ```
 
 ### Creating Custom Providers
@@ -563,11 +563,14 @@ class PressableProvider extends HostingProvider
 
 ## 🔗 Integration Examples
 
-### API Integration
+### API Integration (Planned Feature)
+The following demonstrates how the planned Pressable API integration will work:
+
 ```php
 <?php
 
-// Pressable API integration
+// Example: Future Pressable API integration
+// Note: This API wrapper is planned for a future release
 $pressable = new PressableAPI($apiKey);
 $migration = $pressable->createMigration([
     'source_url' => 'https://source-site.com',
