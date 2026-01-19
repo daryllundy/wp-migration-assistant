@@ -1,9 +1,21 @@
+# Dependencies
 node_modules/
+vendor/
+
+# Environment
 .env
+
+# OS
 .DS_Store
+
+# Logs
 *.log
+
+# Build artifacts
 dist/
 build/
+
+# Python
 __pycache__/
 *.pyc
 .venv/
@@ -13,9 +25,26 @@ venv/
 htmlcov/
 .mypy_cache/
 .tox/
+
+# PHP/PHPUnit
+.phpunit.result.cache
+.phpunit.cache/
+.php-cs-fixer.cache
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
 docker-compose.override.yml
+
+# Secrets/Certificates
 secrets/
-vendor/
 *.pem
 *.key
 *.crt
+
+# Claude Code
+.claude/
