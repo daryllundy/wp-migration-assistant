@@ -31,7 +31,7 @@ final class PlanCommand extends Command
             ->setDescription('Create a migration plan')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'Source path or URL')
             ->addOption('destination', null, InputOption::VALUE_REQUIRED, 'Destination path or URL')
-            ->addOption('strategy', null, InputOption::VALUE_OPTIONAL, 'Migration strategy', 'zero-downtime')
+            ->addOption('strategy', null, InputOption::VALUE_OPTIONAL, 'Migration strategy', 'standard')
             ->addOption('chunk-size', null, InputOption::VALUE_OPTIONAL, 'Chunk size for incremental migrations')
             ->addOption('with-staging', null, InputOption::VALUE_NONE, 'Include staging environment')
             ->addOption('output', null, InputOption::VALUE_OPTIONAL, 'Output file', 'migration-plan.json');

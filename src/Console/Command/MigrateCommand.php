@@ -39,7 +39,7 @@ final class MigrateCommand extends Command
             ->addOption('plan', null, InputOption::VALUE_OPTIONAL, 'Path to migration plan')
             ->addOption('source', null, InputOption::VALUE_OPTIONAL, 'Source URL/path')
             ->addOption('destination', null, InputOption::VALUE_OPTIONAL, 'Destination URL/path')
-            ->addOption('strategy', null, InputOption::VALUE_OPTIONAL, 'Strategy', 'zero-downtime');
+            ->addOption('strategy', null, InputOption::VALUE_OPTIONAL, 'Strategy', 'standard');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

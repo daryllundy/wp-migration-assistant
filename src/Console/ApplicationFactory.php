@@ -81,8 +81,8 @@ final class ApplicationFactory
             $configParser,
             $webhookNotifier
         );
-        $reportGenerator = new MigrationReportGenerator($repository, $logger);
         $performanceAnalyzer = new PerformanceAnalyzer($repository);
+        $reportGenerator = new MigrationReportGenerator($repository, $logger, $performanceAnalyzer);
         $cdnManager = new CdnManager($config->path('var/cdn.json'));
         $securityScanner = new SecurityScanner();
 

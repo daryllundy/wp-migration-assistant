@@ -27,7 +27,7 @@ final class MigrationPlanTest extends TestCase
     {
         $plan = new MigrationPlan([]);
 
-        $this->assertSame('zero-downtime', $plan->strategy());
+        $this->assertSame('standard', $plan->strategy());
     }
 
     public function testStrategyReturnsSetValue(): void

@@ -62,7 +62,7 @@ final class CreateCommand extends Command
                 'provider' => $provider->getSlug(),
                 'config' => $provider->buildConfig($config),
             ],
-            'zero-downtime'
+            'standard'
         );
 
         $outputPath = (string) $input->getOption('output');

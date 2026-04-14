@@ -7,6 +7,7 @@ namespace WPMigration\Service;
 use DateTimeImmutable;
 use WPMigration\Domain\MigrationPlan;
 use WPMigration\Support\ByteSizeParser;
+use WPMigration\Support\FilesystemHelper;
 
 final class MigrationRunner
 {
@@ -65,7 +66,10 @@ final class MigrationRunner
             $sourceDb = $this->resolveDatabaseConfig($source);
             $destinationDb = $this->resolveDatabaseConfig($destination);
             $backupPath = $this->backupManager->create($migrationId, $source, $sourceDb);
-            $this->repository->update($migrationId, ['backup_path' => $backupPath]);
+            $this->repository->update($migrationId, [
+                'backup_path' => $backupPath,
+                'backup_size_bytes' => FilesystemHelper::directorySize($backupPath),
+            ]);
 
             if (!empty($source['path']) && !empty($destination['path'])) {
                 $this->updateProgress($migrationId, 30, 'files');

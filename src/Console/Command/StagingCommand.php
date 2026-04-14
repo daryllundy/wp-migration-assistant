@@ -59,7 +59,7 @@ final class StagingCommand extends Command
             $stagePlan = $this->planner->plan(
                 $sourceLocation,
                 $stagingLocation,
-                'zero-downtime',
+                'standard',
                 ['staging_phase' => 'warmup']
             );
             $stageMigrationId = $this->runner->run($stagePlan);
@@ -67,7 +67,7 @@ final class StagingCommand extends Command
             $finalPlan = $this->planner->plan(
                 $stagingLocation,
                 $destinationLocation,
-                'zero-downtime',
+                'standard',
                 ['staging_phase' => 'cutover', 'staged_from_migration' => $stageMigrationId]
             );
             $finalMigrationId = $this->runner->run($finalPlan);
