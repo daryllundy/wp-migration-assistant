@@ -12,6 +12,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use WPMigration\Service\MigrationPlanner;
 use WPMigration\Service\MigrationRepository;
 use WPMigration\Service\MigrationRunner;
+use WPMigration\Support\LocationNormalizer;
 
 final class IncrementalCommand extends Command
 {
@@ -50,31 +51,22 @@ final class IncrementalCommand extends Command
         }
 
         $plan = $this->planner->plan(
-            $this->normalizeLocation($source),
-            $this->normalizeLocation($destination),
+            LocationNormalizer::normalize($source),
+            LocationNormalizer::normalize($destination),
             'incremental',
             ['chunk_size' => $input->getOption('chunk-size')]
         );
 
-        $migrationId = $this->runner->run($plan, true);
+        try {
+            $migrationId = $this->runner->run($plan, true);
+        } catch (\Throwable $exception) {
+            $io->error('Incremental migration failed: ' . $exception->getMessage());
+            return Command::FAILURE;
+        }
+
         $record = $this->repository->get($migrationId);
 
         $io->success(sprintf('Incremental migration %s completed (%s)', $migrationId, $record['status'] ?? 'unknown'));
         return Command::SUCCESS;
-    }
-
-    /** @return array<string, mixed> */
-    private function normalizeLocation(string $value): array
-    {
-        if (is_dir($value)) {
-            return [
-                'path' => $value,
-                'url' => $value,
-            ];
-        }
-
-        return [
-            'url' => $value,
-        ];
     }
 }

@@ -6,6 +6,7 @@ namespace WPMigration\Service;
 
 use DateTimeImmutable;
 use WPMigration\Domain\MigrationPlan;
+use WPMigration\Support\ByteSizeParser;
 
 final class MigrationRunner
 {
@@ -68,19 +69,24 @@ final class MigrationRunner
 
             if (!empty($source['path']) && !empty($destination['path'])) {
                 $this->updateProgress($migrationId, 30, 'files');
-                $this->fileSync->sync($source['path'], $destination['path']);
+                $syncStats = $this->syncFiles($plan, $source['path'], $destination['path'], false);
+                $this->recordSyncStats($migrationId, $syncStats);
             }
 
             if ($sourceDb !== null && $destinationDb !== null) {
                 $this->updateProgress($migrationId, 50, 'database');
                 $dumpPath = $this->tempDumpPath($migrationId);
                 $this->databaseManager->dump($sourceDb, $dumpPath);
+                $this->repository->update($migrationId, [
+                    'database_size' => filesize($dumpPath) ?: null,
+                ]);
                 $this->databaseManager->import($destinationDb, $dumpPath);
             }
 
             if ($incremental && !empty($source['path']) && !empty($destination['path'])) {
                 $this->updateProgress($migrationId, 65, 'incremental_sync');
-                $this->fileSync->sync($source['path'], $destination['path'], true);
+                $syncStats = $this->syncFiles($plan, $source['path'], $destination['path'], true);
+                $this->recordSyncStats($migrationId, $syncStats);
             }
 
             $this->updateProgress($migrationId, 75, 'optimizations');
@@ -195,6 +201,30 @@ final class MigrationRunner
     {
         $path = sys_get_temp_dir() . '/' . $migrationId . '-dump.sql';
         return $path;
+    }
+
+    /** @return array<string, int|string> */
+    private function syncFiles(MigrationPlan $plan, string $sourcePath, string $destinationPath, bool $delete): array
+    {
+        $chunkSize = ByteSizeParser::parse($this->optionValue($plan, 'chunk_size'));
+        if ($chunkSize !== null && $chunkSize > 0) {
+            return $this->fileSync->syncInChunks($sourcePath, $destinationPath, $chunkSize, $delete);
+        }
+
+        return $this->fileSync->sync($sourcePath, $destinationPath, $delete);
+    }
+
+    /** @param array<string, int|string> $stats */
+    private function recordSyncStats(string $migrationId, array $stats): void
+    {
+        $record = $this->repository->get($migrationId);
+
+        $this->repository->update($migrationId, [
+            'files_transferred' => (int) ($record['files_transferred'] ?? 0) + (int) ($stats['files_transferred'] ?? 0),
+            'bytes_transferred' => (int) ($record['bytes_transferred'] ?? 0) + (int) ($stats['bytes_transferred'] ?? 0),
+            'sync_batches' => (int) ($record['sync_batches'] ?? 0) + (int) ($stats['batches'] ?? 0),
+            'sync_mode' => (string) ($stats['mode'] ?? 'unknown'),
+        ]);
     }
 
     private function resolveDestinationDomain(string $value): string

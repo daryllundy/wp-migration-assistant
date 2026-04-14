@@ -12,6 +12,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use WPMigration\Service\MigrationPlanner;
 use WPMigration\Service\MigrationRepository;
 use WPMigration\Service\MigrationRunner;
+use WPMigration\Support\LocationNormalizer;
 
 final class StagingCommand extends Command
 {
@@ -34,7 +35,7 @@ final class StagingCommand extends Command
         $this
             ->setDescription('Run a staged migration workflow before the final destination pass')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'Source URL/path')
-            ->addOption('staging', null, InputOption::VALUE_REQUIRED, 'Staging URL')
+            ->addOption('staging', null, InputOption::VALUE_REQUIRED, 'Staging path or URL')
             ->addOption('destination', null, InputOption::VALUE_REQUIRED, 'Destination URL/path');
     }
 
@@ -50,32 +51,41 @@ final class StagingCommand extends Command
             return Command::INVALID;
         }
 
-        $plan = $this->planner->plan(
-            $this->normalizeLocation($source),
-            $this->normalizeLocation($destination),
-            'zero-downtime',
-            ['staging_url' => $staging]
-        );
+        $stagingLocation = LocationNormalizer::normalize($staging);
+        $sourceLocation = LocationNormalizer::normalize($source);
+        $destinationLocation = LocationNormalizer::normalize($destination);
 
-        $migrationId = $this->runner->run($plan);
-        $record = $this->repository->get($migrationId);
+        try {
+            $stagePlan = $this->planner->plan(
+                $sourceLocation,
+                $stagingLocation,
+                'zero-downtime',
+                ['staging_phase' => 'warmup']
+            );
+            $stageMigrationId = $this->runner->run($stagePlan);
 
-        $io->success(sprintf('Staging migration %s completed (%s)', $migrationId, $record['status'] ?? 'unknown'));
-        return Command::SUCCESS;
-    }
-
-    /** @return array<string, mixed> */
-    private function normalizeLocation(string $value): array
-    {
-        if (is_dir($value)) {
-            return [
-                'path' => $value,
-                'url' => $value,
-            ];
+            $finalPlan = $this->planner->plan(
+                $stagingLocation,
+                $destinationLocation,
+                'zero-downtime',
+                ['staging_phase' => 'cutover', 'staged_from_migration' => $stageMigrationId]
+            );
+            $finalMigrationId = $this->runner->run($finalPlan);
+        } catch (\Throwable $exception) {
+            $io->error('Staged migration failed: ' . $exception->getMessage());
+            return Command::FAILURE;
         }
 
-        return [
-            'url' => $value,
-        ];
+        $stageRecord = $this->repository->get($stageMigrationId);
+        $finalRecord = $this->repository->get($finalMigrationId);
+
+        $io->success(sprintf(
+            'Staging pass %s (%s), final pass %s (%s)',
+            $stageMigrationId,
+            $stageRecord['status'] ?? 'unknown',
+            $finalMigrationId,
+            $finalRecord['status'] ?? 'unknown'
+        ));
+        return Command::SUCCESS;
     }
 }

@@ -27,4 +27,11 @@ final class LocationNormalizerTest extends TestCase
 
         $this->assertSame(['url' => $url], LocationNormalizer::normalize($url));
     }
+
+    public function testNormalizeTreatsPathLikeValuesAsPathsEvenBeforeCreation(): void
+    {
+        $path = './build/staging-site';
+
+        $this->assertSame(['path' => $path], LocationNormalizer::normalize($path));
+    }
 }
