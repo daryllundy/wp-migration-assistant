@@ -32,7 +32,7 @@ final class StagingCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Run a migration with staging environment')
+            ->setDescription('Run a staged migration workflow before the final destination pass')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'Source URL/path')
             ->addOption('staging', null, InputOption::VALUE_REQUIRED, 'Staging URL')
             ->addOption('destination', null, InputOption::VALUE_REQUIRED, 'Destination URL/path');

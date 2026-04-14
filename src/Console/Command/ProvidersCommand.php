@@ -24,7 +24,7 @@ final class ProvidersCommand extends Command
 
     protected function configure(): void
     {
-        $this->setDescription('List supported hosting providers');
+        $this->setDescription('List available provider presets');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

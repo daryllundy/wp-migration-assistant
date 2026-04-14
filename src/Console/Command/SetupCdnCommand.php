@@ -26,7 +26,7 @@ final class SetupCdnCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Configure CDN integration')
+            ->setDescription('Write a local CDN configuration manifest')
             ->addOption('provider', null, InputOption::VALUE_REQUIRED, 'CDN provider')
             ->addOption('config', null, InputOption::VALUE_OPTIONAL, 'Config file');
     }

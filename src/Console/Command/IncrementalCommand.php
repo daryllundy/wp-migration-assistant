@@ -32,7 +32,7 @@ final class IncrementalCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Run an incremental migration')
+            ->setDescription('Run a repeated migration pass with incremental file sync')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'Source URL/path')
             ->addOption('destination', null, InputOption::VALUE_REQUIRED, 'Destination URL/path')
             ->addOption('chunk-size', null, InputOption::VALUE_OPTIONAL, 'Chunk size', '100MB');

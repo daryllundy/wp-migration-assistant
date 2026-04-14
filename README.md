@@ -5,40 +5,40 @@
 ![Symfony](https://img.shields.io/badge/Symfony-6.0+-red.svg)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)
-![Status](https://img.shields.io/badge/status-production--ready-success.svg)
+![Status](https://img.shields.io/badge/status-prototype-orange.svg)
 
-**Zero-downtime WordPress migration tool with hosting provider profiles and automated deployment.**
+**Local-first WordPress migration CLI with provider presets, backup tooling, and migration bookkeeping.**
 
-Built for enterprise hosting environments and large-scale WordPress migrations.
+Built as a practical prototype for local and self-managed WordPress migration workflows.
 
 ## 🚀 Features
 
 ### Migration Management
-- **Zero-downtime migrations** for sites under 1GB
-- **Incremental sync** for large database migrations
-- **Automated rollback** with one-click recovery
-- **Pre-flight compatibility checks** before migration
-- **Real-time migration progress** with detailed logging
+- **Plan-driven migrations** for local or self-managed workflows
+- **Incremental file sync mode** for repeated local sync passes
+- **Automated rollback** from local backup artifacts
+- **Pre-flight compatibility checks** based on local inspection and plugin heuristics
+- **Step-based progress tracking** with persisted logs and status files
 
 ### Hosting Provider Support
-- **[Pressable](docs/providers/pressable.md)** - Optimized for managed WordPress hosting
-- **[Kinsta](docs/providers/kinsta.md)** - Google Cloud Platform infrastructure
-- **[GoDaddy](docs/providers/godaddy.md)** - Shared and managed hosting support
-- **[InMotion](docs/providers/inmotion.md)** - VPS and dedicated server support
-- **[Custom](docs/providers/custom.md)** - Extensible hosting provider framework
+- **[Pressable](docs/providers/pressable.md)** - Provider preset and compatibility heuristics
+- **[Kinsta](docs/providers/kinsta.md)** - Provider preset and compatibility heuristics
+- **[GoDaddy](docs/providers/godaddy.md)** - Provider preset and compatibility heuristics
+- **[InMotion](docs/providers/inmotion.md)** - Provider preset and compatibility heuristics
+- **[Custom](docs/providers/custom.md)** - Extensible provider preset framework
 
 ### Advanced Features
-- **DNS automation** with automatic propagation
-- **SSL certificate management** with Let's Encrypt integration
+- **Local DNS manifest updates** for planned cutovers
+- **Local certificate issuance helpers** using `certbot` or self-signed certs
 - **Database optimization** during migration process
-- **Plugin compatibility analysis** with automatic updates
-- **Media file optimization** with CDN integration
+- **Plugin compatibility analysis** using provider-specific warning rules
+- **Media file optimization** for local uploads directories
 
 ## 🔄 Migration Process
 
 ![Migration Demo](./demo/migration-demo.gif)
 
-*Zero-downtime WordPress migration with real-time progress tracking*
+*Prototype migration flow with step-based progress tracking*
 
 ## 🛠️ Installation
 
@@ -47,7 +47,8 @@ Built for enterprise hosting environments and large-scale WordPress migrations.
 - Composer
 - MySQL 8.0+
 - WordPress 5.0+
-- SSH access to source and destination servers
+- Local filesystem access to the source and destination sites you want to migrate
+- Optional: `rsync`, `mysql`, `certbot`, and `wkhtmltopdf`
 
 ### Quick Start
 ```bash
@@ -68,29 +69,37 @@ php wp-migrate setup
 
 ### Common Migration Commands
 ```bash
-# Analyze source site
+# Analyze a local site or a remote URL
+php wp-migrate analyze --source ./site
 php wp-migrate analyze --source-url https://example.com
 
-# Create migration plan
-php wp-migrate plan --source example.com --destination pressable.com
+# Create a local migration plan
+php wp-migrate plan --source ./site --destination ./site-copy
 
-# Execute migration
+# Execute a migration from a saved plan
 php wp-migrate migrate --plan migration-plan.json
 
 # Monitor migration progress
 php wp-migrate status --migration-id 12345
 ```
 
-### Provider-Specific Migrations
-For detailed configuration and usage for specific providers, please refer to the documentation:
+### Provider Presets
+Provider docs describe preset configuration, compatibility heuristics, and suggested flags. They do not provide direct hosted-provider API integration:
 
 | Provider | Description | Documentation |
 |----------|-------------|---------------|
-| **Pressable** | Managed WordPress Hosting | [View Docs](docs/providers/pressable.md) |
-| **Kinsta** | Managed WordPress Hosting | [View Docs](docs/providers/kinsta.md) |
-| **GoDaddy** | Shared & Managed Hosting | [View Docs](docs/providers/godaddy.md) |
-| **InMotion** | VPS & Dedicated | [View Docs](docs/providers/inmotion.md) |
-| **Custom** | Custom Implementations | [View Docs](docs/providers/custom.md) |
+| **Pressable** | Preset for managed WordPress targets | [View Docs](docs/providers/pressable.md) |
+| **Kinsta** | Preset for managed WordPress targets | [View Docs](docs/providers/kinsta.md) |
+| **GoDaddy** | Preset for shared or managed WordPress targets | [View Docs](docs/providers/godaddy.md) |
+| **InMotion** | Preset for VPS or dedicated WordPress targets | [View Docs](docs/providers/inmotion.md) |
+| **Custom** | Custom preset implementations | [View Docs](docs/providers/custom.md) |
+
+## ⚠️ Scope Notes
+
+- The CLI is strongest for local-to-local migrations and migration bookkeeping.
+- DNS and CDN commands write local manifests rather than calling provider APIs.
+- SSL helpers can invoke local `certbot` when available, otherwise they generate self-signed certificates.
+- Incremental and staging workflows are guided CLI flows, not managed zero-downtime orchestration.
 
 ## 🔧 Development
 
@@ -108,4 +117,3 @@ php vendor/bin/phpstan analyze
 # Run code formatting
 composer run cs-fix
 ```
-

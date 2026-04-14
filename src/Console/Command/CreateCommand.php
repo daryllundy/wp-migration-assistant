@@ -31,7 +31,7 @@ final class CreateCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Create a migration using a hosting provider profile')
+            ->setDescription('Create a migration using a provider preset')
             ->addOption('provider', null, InputOption::VALUE_REQUIRED, 'Provider slug')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'Source URL/path')
             ->addOption('config', null, InputOption::VALUE_OPTIONAL, 'Provider config file')
