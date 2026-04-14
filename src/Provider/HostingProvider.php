@@ -26,6 +26,13 @@ abstract class HostingProvider
     public function validateCompatibility(string $source): array
     {
         $analysis = $this->siteAnalyzer->analyze($source);
+        return $this->validateCompatibilityFromAnalysis($analysis);
+    }
+
+    /** @param array<string, mixed> $analysis */
+    /** @return array<string, mixed> */
+    public function validateCompatibilityFromAnalysis(array $analysis): array
+    {
         $pluginCheck = $this->pluginAnalyzer->analyze($this->getSlug(), $analysis['plugins'] ?? []);
 
         return [

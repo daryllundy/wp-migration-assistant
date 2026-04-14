@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use WPMigration\Service\MigrationPlanner;
 use WPMigration\Support\JsonFile;
+use WPMigration\Support\LocationNormalizer;
 
 final class PlanCommand extends Command
 {
@@ -48,8 +49,8 @@ final class PlanCommand extends Command
         }
 
         $plan = $this->planner->plan(
-            $this->normalizeLocation($source),
-            $this->normalizeLocation($destination),
+            LocationNormalizer::normalize($source),
+            LocationNormalizer::normalize($destination),
             (string) $input->getOption('strategy'),
             [
                 'chunk_size' => $input->getOption('chunk-size'),
@@ -62,20 +63,5 @@ final class PlanCommand extends Command
 
         $io->success(sprintf('Migration plan saved to %s', $outputPath));
         return Command::SUCCESS;
-    }
-
-    /** @return array<string, mixed> */
-    private function normalizeLocation(string $value): array
-    {
-        if (is_dir($value)) {
-            return [
-                'path' => $value,
-                'url' => $value,
-            ];
-        }
-
-        return [
-            'url' => $value,
-        ];
     }
 }

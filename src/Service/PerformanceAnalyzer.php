@@ -25,10 +25,12 @@ final class PerformanceAnalyzer
 
         return [
             'migration_id' => $migrationId,
+            'status' => $record['status'] ?? 'unknown',
             'duration_seconds' => $duration,
             'files_transferred' => $record['files_transferred'] ?? null,
             'database_size' => $record['database_size'] ?? null,
             'media_optimized' => $record['media_optimized'] ?? null,
+            'tables_optimized' => $record['tables_optimized'] ?? null,
         ];
     }
 }

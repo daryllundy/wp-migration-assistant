@@ -10,15 +10,17 @@ use Symfony\Component\Process\Process;
 final class FileSyncService
 {
     private Filesystem $filesystem;
+    private bool $rsyncAvailable;
 
     public function __construct()
     {
         $this->filesystem = new Filesystem();
+        $this->rsyncAvailable = $this->detectRsync();
     }
 
     public function sync(string $source, string $destination, bool $delete = false): void
     {
-        if ($this->canRsync()) {
+        if ($this->rsyncAvailable) {
             $this->runRsync($source, $destination, $delete);
             return;
         }
@@ -26,7 +28,7 @@ final class FileSyncService
         $this->filesystem->mirror($source, $destination, null, ['override' => true, 'delete' => $delete]);
     }
 
-    private function canRsync(): bool
+    private function detectRsync(): bool
     {
         $process = new Process(['which', 'rsync']);
         $process->run();

@@ -56,10 +56,10 @@ final class AnalyzeCommand extends Command
 
         if ($providerSlug !== '') {
             $provider = $this->providerRegistry->get($providerSlug);
-            $compatibility = $provider->validateCompatibility($source)['compatibility'] ?? [];
+            $compatibility = $provider->validateCompatibilityFromAnalysis($analysis)['compatibility'] ?? [];
         } else {
             foreach ($this->providerRegistry->all() as $slug => $provider) {
-                $compatibility[$slug] = $provider->validateCompatibility($source)['compatibility'][$slug] ?? [];
+                $compatibility[$slug] = $provider->validateCompatibilityFromAnalysis($analysis)['compatibility'][$slug] ?? [];
             }
         }
 

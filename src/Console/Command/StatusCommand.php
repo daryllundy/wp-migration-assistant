@@ -54,8 +54,17 @@ final class StatusCommand extends Command
             ['ID' => $migrationId],
             ['Status' => $record['status'] ?? 'unknown'],
             ['Progress' => ($record['progress'] ?? 0) . '%'],
-            ['Current Step' => $record['current_step'] ?? 'n/a']
+            ['Current Step' => $record['current_step'] ?? 'n/a'],
+            ['Started At' => $record['started_at'] ?? 'n/a'],
+            ['Completed At' => $record['completed_at'] ?? ($record['failed_at'] ?? 'n/a')],
+            ['Backup Path' => $record['backup_path'] ?? 'n/a'],
+            ['Tables Optimized' => (string) ($record['tables_optimized'] ?? '0')],
+            ['Media Optimized' => (string) ($record['media_optimized'] ?? '0')]
         );
+
+        if (!empty($record['error_message'])) {
+            $io->warning($record['error_message']);
+        }
 
         $io->section('Recent Logs');
         $logs = array_slice($this->logger->read($migrationId), -5);

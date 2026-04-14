@@ -12,6 +12,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use WPMigration\Service\MigrationPlanner;
 use WPMigration\Service\ProviderRegistry;
 use WPMigration\Support\JsonFile;
+use WPMigration\Support\LocationNormalizer;
 
 final class CreateCommand extends Command
 {
@@ -56,7 +57,7 @@ final class CreateCommand extends Command
         }
 
         $plan = $this->planner->plan(
-            $this->normalizeLocation($source),
+            LocationNormalizer::normalize($source),
             [
                 'provider' => $provider->getSlug(),
                 'config' => $provider->buildConfig($config),
@@ -69,20 +70,5 @@ final class CreateCommand extends Command
         $io->success(sprintf('Created plan for %s provider at %s', $provider->getName(), $outputPath));
 
         return Command::SUCCESS;
-    }
-
-    /** @return array<string, mixed> */
-    private function normalizeLocation(string $value): array
-    {
-        if (is_dir($value)) {
-            return [
-                'path' => $value,
-                'url' => $value,
-            ];
-        }
-
-        return [
-            'url' => $value,
-        ];
     }
 }

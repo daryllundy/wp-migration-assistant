@@ -34,7 +34,8 @@ final class SiteAnalyzer
     {
         $wpConfig = rtrim($path, '/') . '/wp-config.php';
         $wpVersion = $this->extractWpVersion(rtrim($path, '/') . '/wp-includes/version.php');
-        $size = FilesystemHelper::directorySize($path);
+        $uploadsPath = rtrim($path, '/') . '/wp-content/uploads';
+        $metrics = FilesystemHelper::directoryMetrics($path, $uploadsPath);
         $plugins = $this->pluginAnalyzer->listPlugins($path);
 
         return [
@@ -43,9 +44,9 @@ final class SiteAnalyzer
             'wordpress_version' => $wpVersion,
             'php_version' => PHP_VERSION,
             'mysql_version' => $this->detectMysqlVersion(),
-            'total_size' => FilesystemHelper::formatBytes($size),
+            'total_size' => FilesystemHelper::formatBytes($metrics['total_size']),
             'database_size' => null,
-            'media_files' => FilesystemHelper::formatBytes($this->estimateMediaSize($path)),
+            'media_files' => FilesystemHelper::formatBytes($metrics['matched_size']),
             'wp_config_found' => file_exists($wpConfig),
             'plugins' => $plugins,
         ];
@@ -110,11 +111,5 @@ final class SiteAnalyzer
         }
 
         return null;
-    }
-
-    private function estimateMediaSize(string $path): int
-    {
-        $uploads = rtrim($path, '/') . '/wp-content/uploads';
-        return FilesystemHelper::directorySize($uploads);
     }
 }

@@ -38,10 +38,20 @@ final class DatabaseManager
             $command[] = '-p' . $config['password'];
         }
 
+        $stream = fopen($inputPath, 'rb');
+        if ($stream === false) {
+            throw new \RuntimeException('Unable to open database dump: ' . $inputPath);
+        }
+
         $process = new Process($command);
-        $process->setInput(file_get_contents($inputPath) ?: '');
+        $process->setInput($stream);
         $process->setTimeout(600);
-        $process->mustRun();
+
+        try {
+            $process->mustRun();
+        } finally {
+            fclose($stream);
+        }
     }
 
     /** @param array<string, string> $config */
