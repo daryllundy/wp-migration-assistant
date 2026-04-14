@@ -50,23 +50,28 @@ final class AnalyzeCommand extends Command
             return Command::INVALID;
         }
 
-        $analysis = $this->siteAnalyzer->analyze($source);
+        $sections = $this->requestedSections($input);
+        $analysis = $this->siteAnalyzer->analyze($source, [
+            'include_plugins' => $sections['plugins'],
+            'include_database' => $sections['database'],
+            'include_performance' => $sections['performance'],
+        ]);
         $compatibility = [];
         $providerSlug = (string) $input->getOption('provider');
 
-        if ($providerSlug !== '') {
+        if ($sections['compatibility'] && $providerSlug !== '') {
             $provider = $this->providerRegistry->get($providerSlug);
             $compatibility = $provider->validateCompatibilityFromAnalysis($analysis)['compatibility'] ?? [];
-        } else {
+        } elseif ($sections['compatibility']) {
             foreach ($this->providerRegistry->all() as $slug => $provider) {
                 $compatibility[$slug] = $provider->validateCompatibilityFromAnalysis($analysis)['compatibility'][$slug] ?? [];
             }
         }
 
-        $payload = [
-            'site_analysis' => $analysis,
-            'compatibility' => $compatibility,
-        ];
+        $payload = ['site_analysis' => $analysis];
+        if ($compatibility !== []) {
+            $payload['compatibility'] = $compatibility;
+        }
 
         if ($input->getOption('format') === 'json') {
             $output->writeln(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
@@ -75,20 +80,87 @@ final class AnalyzeCommand extends Command
 
         $io->section('Site Analysis');
         $io->definitionList(
-            ...array_map(
-                static fn (string $key) => [$key => (string) ($analysis[$key] ?? 'n/a')],
-                array_keys($analysis)
-            )
+            ['source_type' => (string) ($analysis['source_type'] ?? 'n/a')],
+            ['path_or_url' => (string) ($analysis['path'] ?? $analysis['url'] ?? 'n/a')],
+            ['wordpress_version' => (string) ($analysis['wordpress_version'] ?? 'n/a')],
+            ['php_version' => (string) ($analysis['php_version'] ?? 'n/a')],
+            ['mysql_version' => (string) ($analysis['mysql_version'] ?? 'n/a')],
+            ['total_size' => (string) ($analysis['total_size'] ?? 'n/a')],
+            ['media_files' => (string) ($analysis['media_files'] ?? 'n/a')],
+            ['wp_config_found' => array_key_exists('wp_config_found', $analysis) ? json_encode($analysis['wp_config_found']) : 'n/a']
         );
 
-        $io->section('Compatibility');
-        foreach ($compatibility as $provider => $details) {
-            $io->text(sprintf('%s: %s', $provider, ($details['compatible'] ?? false) ? 'compatible' : 'warnings'));
-            foreach ($details['warnings'] ?? [] as $warning) {
-                $io->text(' - ' . $warning);
+        if (!empty($analysis['plugins'])) {
+            $io->section('Plugins');
+            $rows = array_map(
+                static fn (array $plugin) => [
+                    $plugin['slug'] ?? 'unknown',
+                    $plugin['name'] ?? 'unknown',
+                    $plugin['version'] ?? 'unknown',
+                ],
+                $analysis['plugins']
+            );
+            $io->table(['Slug', 'Name', 'Version'], $rows);
+        }
+
+        if (isset($analysis['database'])) {
+            $io->section('Database');
+            $io->definitionList(...$this->formatDefinitionList($analysis['database']));
+        }
+
+        if (isset($analysis['performance'])) {
+            $io->section('Performance');
+            $io->definitionList(...$this->formatDefinitionList($analysis['performance']));
+        }
+
+        if ($compatibility !== []) {
+            $io->section('Compatibility');
+            foreach ($compatibility as $provider => $details) {
+                $io->text(sprintf('%s: %s', $provider, ($details['compatible'] ?? false) ? 'compatible' : 'warnings'));
+                foreach ($details['warnings'] ?? [] as $warning) {
+                    $io->text(' - ' . $warning);
+                }
             }
         }
 
         return Command::SUCCESS;
+    }
+
+    /** @return array{plugins: bool, database: bool, performance: bool, compatibility: bool} */
+    private function requestedSections(InputInterface $input): array
+    {
+        $comprehensive = (bool) $input->getOption('comprehensive');
+        $plugins = $comprehensive || (bool) $input->getOption('plugins');
+        $database = $comprehensive || (bool) $input->getOption('database');
+        $performance = $comprehensive || (bool) $input->getOption('performance');
+        $hasSpecificSelection = $plugins || $database || $performance;
+
+        if (!$hasSpecificSelection) {
+            return [
+                'plugins' => true,
+                'database' => false,
+                'performance' => false,
+                'compatibility' => true,
+            ];
+        }
+
+        return [
+            'plugins' => $plugins,
+            'database' => $database,
+            'performance' => $performance,
+            'compatibility' => $plugins,
+        ];
+    }
+
+    /** @param array<string, mixed> $payload */
+    /** @return array<int, array<string, string>> */
+    private function formatDefinitionList(array $payload): array
+    {
+        return array_map(
+            static fn (string $key) => [$key => is_scalar($payload[$key] ?? null) || $payload[$key] === null
+                ? (string) ($payload[$key] ?? 'n/a')
+                : json_encode($payload[$key], JSON_UNESCAPED_SLASHES)],
+            array_keys($payload)
+        );
     }
 }
