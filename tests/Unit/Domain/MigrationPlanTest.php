@@ -23,7 +23,7 @@ final class MigrationPlanTest extends TestCase
         $this->assertSame('mig_12345', $plan->id());
     }
 
-    public function testStrategyDefaultsToZeroDowntime(): void
+    public function testStrategyDefaultsToStandard(): void
     {
         $plan = new MigrationPlan([]);
 
