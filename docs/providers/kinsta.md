@@ -1,18 +1,15 @@
-# Kinsta Migration Guide
+# Kinsta Preset Guide
 
-Kinsta offers premium managed WordPress hosting powered by Google Cloud Platform.
+This preset captures Kinsta-oriented defaults and compatibility warnings. It does not call Kinsta APIs or create sites automatically.
 
 ## Configuration
 
-Use the following JSON structure for Kinsta migrations:
+Use the following JSON structure for Kinsta-oriented plans:
 
 ```json
 {
   "provider": "kinsta",
   "config": {
-    "api_key": "your-kinsta-api-key",
-    "site_id": "kinsta-site-id",
-    "staging_available": true,
     "php_version": "8.0",
     "optimization": {
       "kinsta_cache": true,
@@ -23,14 +20,14 @@ Use the following JSON structure for Kinsta migrations:
 }
 ```
 
-## Features
+## What This Preset Does
 
-- **Kinsta Cache**: Native support for Kinsta's caching mechanisms.
-- **Staging Environments**: Full support for migrating to and from Kinsta staging sites.
-- **Google Cloud Optimization**: Tuning for GCP infrastructure.
+- **Preset Defaults**: Carries Kinsta-flavored optimization flags into the generated plan.
+- **Compatibility Heuristics**: Surfaces a small set of plugin warnings during analysis.
+- **Manual Handoff Friendly**: Keeps provider-specific settings in a plan file you can use alongside your own deployment process.
 
 ## Usage
 
 ```bash
-php wp-migrate create --provider kinsta --source example.com
+php wp-migrate create --provider kinsta --source ./site
 ```

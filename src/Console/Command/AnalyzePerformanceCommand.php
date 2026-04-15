@@ -26,7 +26,7 @@ final class AnalyzePerformanceCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Analyze migration performance')
+            ->setDescription('Summarize stored migration performance metrics')
             ->addOption('migration-id', null, InputOption::VALUE_REQUIRED, 'Migration ID');
     }
 

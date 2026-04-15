@@ -14,6 +14,7 @@ use WPMigration\Service\MigrationPlanner;
 use WPMigration\Service\MigrationRepository;
 use WPMigration\Service\MigrationRunner;
 use WPMigration\Support\JsonFile;
+use WPMigration\Support\LocationNormalizer;
 
 final class MigrateCommand extends Command
 {
@@ -38,7 +39,7 @@ final class MigrateCommand extends Command
             ->addOption('plan', null, InputOption::VALUE_OPTIONAL, 'Path to migration plan')
             ->addOption('source', null, InputOption::VALUE_OPTIONAL, 'Source URL/path')
             ->addOption('destination', null, InputOption::VALUE_OPTIONAL, 'Destination URL/path')
-            ->addOption('strategy', null, InputOption::VALUE_OPTIONAL, 'Strategy', 'zero-downtime');
+            ->addOption('strategy', null, InputOption::VALUE_OPTIONAL, 'Strategy', 'standard');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -58,31 +59,22 @@ final class MigrateCommand extends Command
             }
 
             $plan = $this->planner->plan(
-                $this->normalizeLocation($source),
-                $this->normalizeLocation($destination),
+                LocationNormalizer::normalize($source),
+                LocationNormalizer::normalize($destination),
                 (string) $input->getOption('strategy')
             );
         }
 
-        $migrationId = $this->runner->run($plan, $plan->strategy() === 'incremental');
+        try {
+            $migrationId = $this->runner->run($plan, $plan->strategy() === 'incremental');
+        } catch (\Throwable $exception) {
+            $io->error('Migration failed: ' . $exception->getMessage());
+            return Command::FAILURE;
+        }
+
         $record = $this->repository->get($migrationId);
 
         $io->success(sprintf('Migration %s completed with status %s', $migrationId, $record['status'] ?? 'unknown'));
         return Command::SUCCESS;
-    }
-
-    /** @return array<string, mixed> */
-    private function normalizeLocation(string $value): array
-    {
-        if (is_dir($value)) {
-            return [
-                'path' => $value,
-                'url' => $value,
-            ];
-        }
-
-        return [
-            'url' => $value,
-        ];
     }
 }

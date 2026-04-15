@@ -12,6 +12,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use WPMigration\Service\MigrationPlanner;
 use WPMigration\Service\ProviderRegistry;
 use WPMigration\Support\JsonFile;
+use WPMigration\Support\LocationNormalizer;
 
 final class CreateCommand extends Command
 {
@@ -30,7 +31,7 @@ final class CreateCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Create a migration using a hosting provider profile')
+            ->setDescription('Create a migration using a provider preset')
             ->addOption('provider', null, InputOption::VALUE_REQUIRED, 'Provider slug')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'Source URL/path')
             ->addOption('config', null, InputOption::VALUE_OPTIONAL, 'Provider config file')
@@ -56,12 +57,12 @@ final class CreateCommand extends Command
         }
 
         $plan = $this->planner->plan(
-            $this->normalizeLocation($source),
+            LocationNormalizer::normalize($source),
             [
                 'provider' => $provider->getSlug(),
                 'config' => $provider->buildConfig($config),
             ],
-            'zero-downtime'
+            'standard'
         );
 
         $outputPath = (string) $input->getOption('output');
@@ -69,20 +70,5 @@ final class CreateCommand extends Command
         $io->success(sprintf('Created plan for %s provider at %s', $provider->getName(), $outputPath));
 
         return Command::SUCCESS;
-    }
-
-    /** @return array<string, mixed> */
-    private function normalizeLocation(string $value): array
-    {
-        if (is_dir($value)) {
-            return [
-                'path' => $value,
-                'url' => $value,
-            ];
-        }
-
-        return [
-            'url' => $value,
-        ];
     }
 }

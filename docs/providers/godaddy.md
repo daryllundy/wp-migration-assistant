@@ -1,6 +1,6 @@
-# GoDaddy Migration Guide
+# GoDaddy Preset Guide
 
-Support for GoDaddy managed and shared WordPress hosting environments.
+This preset captures configuration and compatibility hints for GoDaddy shared or managed WordPress targets. It does not perform GoDaddy account or hosting API actions.
 
 ## Configuration
 
@@ -9,8 +9,6 @@ Support for GoDaddy managed and shared WordPress hosting environments.
   "provider": "godaddy",
   "config": {
     "ftp_host": "ftp.godaddy.com",
-    "ftp_user": "your-username",
-    "ftp_pass": "your-password",
     "php_version": "7.4",
     "ssl_enabled": true
   }
@@ -20,5 +18,5 @@ Support for GoDaddy managed and shared WordPress hosting environments.
 ## Usage
 
 ```bash
-php wp-migrate create --provider godaddy --source example.com
+php wp-migrate create --provider godaddy --source ./site
 ```

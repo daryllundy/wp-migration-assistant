@@ -80,10 +80,23 @@ final class ReportCommand extends Command
     private function renderHtml(array $report): string
     {
         $summary = $report['summary'] ?? [];
+        $performance = $report['performance'] ?? [];
+        $logs = $report['log_entries'] ?? [];
+
+        $logHtml = '';
+        foreach ($logs as $line) {
+            $logHtml .= '<li>' . htmlspecialchars((string) $line, ENT_QUOTES) . '</li>';
+        }
+
         return sprintf(
-            '<h1>Migration Report</h1><p>Status: %s</p><p>Progress: %s%%</p>',
+            '<h1>Migration Report</h1><p>Status: %s</p><p>Progress: %s%%</p><p>Duration: %s seconds</p><p>Files transferred: %s</p><p>Bytes transferred: %s</p><p>Sync mode: %s</p><h2>Recent Logs</h2><ul>%s</ul>',
             htmlspecialchars((string) ($summary['status'] ?? 'unknown'), ENT_QUOTES),
-            htmlspecialchars((string) ($summary['progress'] ?? 0), ENT_QUOTES)
+            htmlspecialchars((string) ($summary['progress'] ?? 0), ENT_QUOTES),
+            htmlspecialchars((string) ($summary['duration_seconds'] ?? 'n/a'), ENT_QUOTES),
+            htmlspecialchars((string) ($summary['files_transferred'] ?? 'n/a'), ENT_QUOTES),
+            htmlspecialchars((string) ($summary['bytes_transferred_human'] ?? 'n/a'), ENT_QUOTES),
+            htmlspecialchars((string) ($performance['sync_mode'] ?? 'n/a'), ENT_QUOTES),
+            $logHtml
         );
     }
 }

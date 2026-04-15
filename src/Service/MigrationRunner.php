@@ -6,6 +6,8 @@ namespace WPMigration\Service;
 
 use DateTimeImmutable;
 use WPMigration\Domain\MigrationPlan;
+use WPMigration\Support\ByteSizeParser;
+use WPMigration\Support\FilesystemHelper;
 
 final class MigrationRunner
 {
@@ -57,64 +59,90 @@ final class MigrationRunner
         $this->logger->info($migrationId, 'Migration started');
         $this->webhookNotifier->notify('migration.started', ['migration_id' => $migrationId]);
 
-        $this->updateProgress($migrationId, 10, 'backup');
-        $source = $plan->source();
-        $destination = $plan->destination();
-        $sourceDb = $this->resolveDatabaseConfig($source);
-        $destinationDb = $this->resolveDatabaseConfig($destination);
-        $backupPath = $this->backupManager->create($migrationId, $source, $sourceDb);
-        $this->repository->update($migrationId, ['backup_path' => $backupPath]);
-
-        if (!empty($source['path']) && !empty($destination['path'])) {
-            $this->updateProgress($migrationId, 30, 'files');
-            $this->fileSync->sync($source['path'], $destination['path']);
-        }
-
-        if ($sourceDb !== null && $destinationDb !== null) {
-            $this->updateProgress($migrationId, 50, 'database');
-            $dumpPath = $this->tempDumpPath($migrationId);
-            $this->databaseManager->dump($sourceDb, $dumpPath);
-            $this->databaseManager->import($destinationDb, $dumpPath);
-        }
-
-        if ($incremental && !empty($source['path']) && !empty($destination['path'])) {
-            $this->updateProgress($migrationId, 65, 'incremental_sync');
-            $this->fileSync->sync($source['path'], $destination['path'], true);
-        }
-
-        $this->updateProgress($migrationId, 75, 'optimizations');
-        $options = $plan->options();
-        if (($options['optimization'] ?? false) || ($options['database_optimization'] ?? false) || $this->optionEnabled($plan, 'database_optimization')) {
-            if ($destinationDb !== null) {
-                $this->databaseManager->optimize($destinationDb);
-            }
-        }
-
-        if ($this->optionEnabled($plan, 'cdn_enabled') && !empty($destination['path'])) {
-            $mediaResult = $this->mediaOptimizer->optimize($destination['path']);
-            $this->repository->update($migrationId, ['media_optimized' => $mediaResult['optimized']]);
-        }
-
-        $this->updateProgress($migrationId, 85, 'dns_ssl');
-        if (!empty($destination['url'])) {
-            $domain = parse_url($destination['url'], PHP_URL_HOST) ?: $destination['url'];
-            $this->dnsManager->updateRecord($domain, [
-                'type' => 'A',
-                'value' => $destination['host'] ?? '127.0.0.1',
+        try {
+            $this->updateProgress($migrationId, 10, 'backup');
+            $source = $plan->source();
+            $destination = $plan->destination();
+            $sourceDb = $this->resolveDatabaseConfig($source);
+            $destinationDb = $this->resolveDatabaseConfig($destination);
+            $backupPath = $this->backupManager->create($migrationId, $source, $sourceDb);
+            $this->repository->update($migrationId, [
+                'backup_path' => $backupPath,
+                'backup_size_bytes' => FilesystemHelper::directorySize($backupPath),
             ]);
 
-            if ($this->optionEnabled($plan, 'ssl_enabled')) {
-                $this->sslManager->issueCertificate($domain, $this->optionValue($plan, 'ssl_email') ?? 'admin@' . $domain);
+            if (!empty($source['path']) && !empty($destination['path'])) {
+                $this->updateProgress($migrationId, 30, 'files');
+                $syncStats = $this->syncFiles($plan, $source['path'], $destination['path'], false);
+                $this->recordSyncStats($migrationId, $syncStats);
             }
-        }
 
-        $this->updateProgress($migrationId, 100, 'completed');
-        $this->repository->update($migrationId, [
-            'status' => 'completed',
-            'completed_at' => (new DateTimeImmutable())->format(DateTimeImmutable::ATOM),
-        ]);
-        $this->logger->info($migrationId, 'Migration completed');
-        $this->webhookNotifier->notify('migration.completed', ['migration_id' => $migrationId]);
+            if ($sourceDb !== null && $destinationDb !== null) {
+                $this->updateProgress($migrationId, 50, 'database');
+                $dumpPath = $this->tempDumpPath($migrationId);
+                $this->databaseManager->dump($sourceDb, $dumpPath);
+                $this->repository->update($migrationId, [
+                    'database_size' => filesize($dumpPath) ?: null,
+                ]);
+                $this->databaseManager->import($destinationDb, $dumpPath);
+            }
+
+            if ($incremental && !empty($source['path']) && !empty($destination['path'])) {
+                $this->updateProgress($migrationId, 65, 'incremental_sync');
+                $syncStats = $this->syncFiles($plan, $source['path'], $destination['path'], true);
+                $this->recordSyncStats($migrationId, $syncStats);
+            }
+
+            $this->updateProgress($migrationId, 75, 'optimizations');
+            $options = $plan->options();
+            if (($options['optimization'] ?? false) || ($options['database_optimization'] ?? false) || $this->optionEnabled($plan, 'database_optimization')) {
+                if ($destinationDb !== null) {
+                    $optimizationResult = $this->databaseManager->optimize($destinationDb);
+                    $this->repository->update($migrationId, $optimizationResult);
+                }
+            }
+
+            if ($this->optionEnabled($plan, 'cdn_enabled') && !empty($destination['path'])) {
+                $mediaResult = $this->mediaOptimizer->optimize($destination['path']);
+                $this->repository->update($migrationId, ['media_optimized' => $mediaResult['optimized']]);
+            }
+
+            $this->updateProgress($migrationId, 85, 'dns_ssl');
+            if (!empty($destination['url'])) {
+                $domain = $this->resolveDestinationDomain($destination['url']);
+                $this->dnsManager->updateRecord($domain, [
+                    'type' => 'A',
+                    'value' => $destination['host'] ?? '127.0.0.1',
+                ]);
+
+                if ($this->optionEnabled($plan, 'ssl_enabled')) {
+                    $this->sslManager->issueCertificate($domain, $this->optionValue($plan, 'ssl_email') ?? 'admin@' . $domain);
+                }
+            }
+
+            $this->updateProgress($migrationId, 100, 'completed');
+            $this->repository->update($migrationId, [
+                'status' => 'completed',
+                'completed_at' => (new DateTimeImmutable())->format(DateTimeImmutable::ATOM),
+            ]);
+            $this->logger->info($migrationId, 'Migration completed');
+            $this->webhookNotifier->notify('migration.completed', ['migration_id' => $migrationId]);
+        } catch (\Throwable $exception) {
+            $this->repository->update($migrationId, [
+                'status' => 'failed',
+                'failed_at' => (new DateTimeImmutable())->format(DateTimeImmutable::ATOM),
+                'error_message' => $exception->getMessage(),
+            ]);
+            $this->logger->error($migrationId, 'Migration failed', [
+                'message' => $exception->getMessage(),
+            ]);
+            $this->webhookNotifier->notify('migration.failed', [
+                'migration_id' => $migrationId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            throw $exception;
+        }
 
         return $migrationId;
     }
@@ -177,6 +205,40 @@ final class MigrationRunner
     {
         $path = sys_get_temp_dir() . '/' . $migrationId . '-dump.sql';
         return $path;
+    }
+
+    /** @return array<string, int|string> */
+    private function syncFiles(MigrationPlan $plan, string $sourcePath, string $destinationPath, bool $delete): array
+    {
+        $chunkSize = ByteSizeParser::parse($this->optionValue($plan, 'chunk_size'));
+        if ($chunkSize !== null && $chunkSize > 0) {
+            return $this->fileSync->syncInChunks($sourcePath, $destinationPath, $chunkSize, $delete);
+        }
+
+        return $this->fileSync->sync($sourcePath, $destinationPath, $delete);
+    }
+
+    /** @param array<string, int|string> $stats */
+    private function recordSyncStats(string $migrationId, array $stats): void
+    {
+        $record = $this->repository->get($migrationId);
+
+        $this->repository->update($migrationId, [
+            'files_transferred' => (int) ($record['files_transferred'] ?? 0) + (int) ($stats['files_transferred'] ?? 0),
+            'bytes_transferred' => (int) ($record['bytes_transferred'] ?? 0) + (int) ($stats['bytes_transferred'] ?? 0),
+            'sync_batches' => (int) ($record['sync_batches'] ?? 0) + (int) ($stats['batches'] ?? 0),
+            'sync_mode' => (string) ($stats['mode'] ?? 'unknown'),
+        ]);
+    }
+
+    private function resolveDestinationDomain(string $value): string
+    {
+        $host = parse_url($value, PHP_URL_HOST);
+        if (is_string($host) && $host !== '') {
+            return $host;
+        }
+
+        return $value;
     }
 
     private function optionEnabled(MigrationPlan $plan, string $key): bool

@@ -1,15 +1,17 @@
-# Custom Provider Integration
+# Custom Provider Presets
 
-The WP Migration Assistant is designed to be extensible. You can define custom hosting providers to suit your specific infrastructure needs.
+The CLI supports custom provider presets. A custom provider can supply naming, defaults, and compatibility heuristics, but the current architecture does not include remote provisioning hooks.
 
-## Creating a Custom Provider
+## Creating a Custom Provider Preset
 
-Extend the `HostingProvider` class to create your logic.
+Extend `HostingProvider` and override the pieces the CLI actually consumes today.
 
 ```php
 <?php
 
-use WPMigration\Providers\HostingProvider;
+use WPMigration\Provider\HostingProvider;
+use WPMigration\Service\PluginCompatibilityAnalyzer;
+use WPMigration\Service\SiteAnalyzer;
 
 class MyCustomProvider extends HostingProvider
 {
@@ -17,17 +19,14 @@ class MyCustomProvider extends HostingProvider
     {
         return 'My Custom Hosting';
     }
-    
-    public function validateCompatibility(WordPressSite $site): ValidationResult
+
+    protected function providerDefaults(): array
     {
-        // Custom validation logic
-        return new ValidationResult(true);
-    }
-    
-    public function createDeploymentPlan(WordPressSite $site): DeploymentPlan
-    {
-        // Custom deployment planning
-        return new DeploymentPlan($site);
+        return [
+            'optimization' => [
+                'database_optimization' => true,
+            ],
+        ];
     }
 }
 ```
@@ -37,5 +36,5 @@ class MyCustomProvider extends HostingProvider
 To use a custom provider configuration:
 
 ```bash
-php wp-migrate create --provider custom --config custom-provider.json
+php wp-migrate create --provider custom --source ./site --config custom-provider.json
 ```

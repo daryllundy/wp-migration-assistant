@@ -28,7 +28,7 @@ final class MigrationPlan
 
     public function strategy(): string
     {
-        return (string) ($this->data['strategy'] ?? 'zero-downtime');
+        return (string) ($this->data['strategy'] ?? 'standard');
     }
 
     /** @return array<string, mixed> */

@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use WPMigration\Service\MigrationPlanner;
 use WPMigration\Support\JsonFile;
+use WPMigration\Support\LocationNormalizer;
 
 final class PlanCommand extends Command
 {
@@ -30,7 +31,7 @@ final class PlanCommand extends Command
             ->setDescription('Create a migration plan')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'Source path or URL')
             ->addOption('destination', null, InputOption::VALUE_REQUIRED, 'Destination path or URL')
-            ->addOption('strategy', null, InputOption::VALUE_OPTIONAL, 'Migration strategy', 'zero-downtime')
+            ->addOption('strategy', null, InputOption::VALUE_OPTIONAL, 'Migration strategy', 'standard')
             ->addOption('chunk-size', null, InputOption::VALUE_OPTIONAL, 'Chunk size for incremental migrations')
             ->addOption('with-staging', null, InputOption::VALUE_NONE, 'Include staging environment')
             ->addOption('output', null, InputOption::VALUE_OPTIONAL, 'Output file', 'migration-plan.json');
@@ -48,8 +49,8 @@ final class PlanCommand extends Command
         }
 
         $plan = $this->planner->plan(
-            $this->normalizeLocation($source),
-            $this->normalizeLocation($destination),
+            LocationNormalizer::normalize($source),
+            LocationNormalizer::normalize($destination),
             (string) $input->getOption('strategy'),
             [
                 'chunk_size' => $input->getOption('chunk-size'),
@@ -62,20 +63,5 @@ final class PlanCommand extends Command
 
         $io->success(sprintf('Migration plan saved to %s', $outputPath));
         return Command::SUCCESS;
-    }
-
-    /** @return array<string, mixed> */
-    private function normalizeLocation(string $value): array
-    {
-        if (is_dir($value)) {
-            return [
-                'path' => $value,
-                'url' => $value,
-            ];
-        }
-
-        return [
-            'url' => $value,
-        ];
     }
 }

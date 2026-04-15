@@ -54,8 +54,23 @@ final class StatusCommand extends Command
             ['ID' => $migrationId],
             ['Status' => $record['status'] ?? 'unknown'],
             ['Progress' => ($record['progress'] ?? 0) . '%'],
-            ['Current Step' => $record['current_step'] ?? 'n/a']
+            ['Current Step' => $record['current_step'] ?? 'n/a'],
+            ['Started At' => $record['started_at'] ?? 'n/a'],
+            ['Completed At' => $record['completed_at'] ?? ($record['failed_at'] ?? 'n/a')],
+            ['Backup Path' => $record['backup_path'] ?? 'n/a'],
+            ['Backup Size (bytes)' => (string) ($record['backup_size_bytes'] ?? '0')],
+            ['Files Transferred' => (string) ($record['files_transferred'] ?? '0')],
+            ['Bytes Transferred' => (string) ($record['bytes_transferred'] ?? '0')],
+            ['Sync Batches' => (string) ($record['sync_batches'] ?? '0')],
+            ['Sync Mode' => (string) ($record['sync_mode'] ?? 'n/a')],
+            ['Tables Optimized' => (string) ($record['tables_optimized'] ?? '0')],
+            ['Media Optimized' => (string) ($record['media_optimized'] ?? '0')],
+            ['Database Dump Size (bytes)' => (string) ($record['database_size'] ?? '0')]
         );
+
+        if (!empty($record['error_message'])) {
+            $io->warning($record['error_message']);
+        }
 
         $io->section('Recent Logs');
         $logs = array_slice($this->logger->read($migrationId), -5);

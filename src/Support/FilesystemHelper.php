@@ -10,25 +10,50 @@ use SplFileInfo;
 
 final class FilesystemHelper
 {
-    public static function directorySize(string $path): int
+    /** @return array{total_size:int, matched_size:int} */
+    public static function directoryMetrics(string $path, ?string $matchedPrefix = null): array
     {
         if (!is_dir($path)) {
-            return 0;
+            return [
+                'total_size' => 0,
+                'matched_size' => 0,
+            ];
         }
 
+        $normalizedPrefix = $matchedPrefix !== null ? rtrim(str_replace('\\', '/', $matchedPrefix), '/') . '/' : null;
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS)
         );
 
-        $size = 0;
+        $totalSize = 0;
+        $matchedSize = 0;
+
         /** @var SplFileInfo $file */
         foreach ($iterator as $file) {
-            if ($file->isFile()) {
-                $size += $file->getSize();
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            $size = $file->getSize();
+            $totalSize += $size;
+
+            if ($normalizedPrefix !== null) {
+                $pathname = str_replace('\\', '/', $file->getPathname());
+                if (str_starts_with($pathname, $normalizedPrefix)) {
+                    $matchedSize += $size;
+                }
             }
         }
 
-        return $size;
+        return [
+            'total_size' => $totalSize,
+            'matched_size' => $matchedSize,
+        ];
+    }
+
+    public static function directorySize(string $path): int
+    {
+        return self::directoryMetrics($path)['total_size'];
     }
 
     public static function formatBytes(int $bytes): string

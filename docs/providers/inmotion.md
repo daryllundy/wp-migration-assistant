@@ -1,6 +1,6 @@
-# InMotion Hosting Migration Guide
+# InMotion Preset Guide
 
-Support for InMotion Hosting VPS and dedicated server environments.
+This preset captures configuration and compatibility hints for InMotion VPS or dedicated targets. It does not provision servers or manage remote deployments.
 
 ## Configuration
 
@@ -9,7 +9,6 @@ Support for InMotion Hosting VPS and dedicated server environments.
   "provider": "inmotion",
   "config": {
     "ssh_host": "ssh.inmotionhosting.com",
-    "ssh_user": "your-username",
     "ssh_key": "/path/to/private/key",
     "php_version": "8.0"
   }
@@ -19,5 +18,5 @@ Support for InMotion Hosting VPS and dedicated server environments.
 ## Usage
 
 ```bash
-php wp-migrate create --provider inmotion --source example.com
+php wp-migrate create --provider inmotion --source ./site
 ```

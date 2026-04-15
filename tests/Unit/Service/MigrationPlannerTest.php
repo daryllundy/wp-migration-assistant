@@ -28,14 +28,14 @@ final class MigrationPlannerTest extends TestCase
             'provider' => 'pressable',
         ];
 
-        $plan = $this->planner->plan($source, $destination, 'zero-downtime');
+        $plan = $this->planner->plan($source, $destination, 'standard');
 
         $this->assertInstanceOf(MigrationPlan::class, $plan);
     }
 
     public function testPlanIncludesMigrationId(): void
     {
-        $plan = $this->planner->plan([], [], 'zero-downtime');
+        $plan = $this->planner->plan([], [], 'standard');
 
         $this->assertNotEmpty($plan->id());
         $this->assertStringStartsWith('mig_', $plan->id());
@@ -53,7 +53,7 @@ final class MigrationPlannerTest extends TestCase
         $source = ['url' => 'https://source.com'];
         $destination = ['url' => 'https://dest.com'];
 
-        $plan = $this->planner->plan($source, $destination, 'zero-downtime');
+        $plan = $this->planner->plan($source, $destination, 'standard');
 
         $this->assertSame($source, $plan->source());
         $this->assertSame($destination, $plan->destination());
@@ -66,7 +66,7 @@ final class MigrationPlannerTest extends TestCase
             'backup_before' => true,
         ];
 
-        $plan = $this->planner->plan([], [], 'zero-downtime', $options);
+        $plan = $this->planner->plan([], [], 'standard', $options);
 
         $this->assertSame($options, $plan->options());
     }
@@ -77,7 +77,7 @@ final class MigrationPlannerTest extends TestCase
         $destination = ['url' => 'https://dest.com'];
         $options = ['ssl_enabled' => true];
 
-        $plan = $this->planner->plan($source, $destination, 'zero-downtime', $options);
+        $plan = $this->planner->plan($source, $destination, 'standard', $options);
         $data = $plan->toArray();
 
         $this->assertArrayHasKey('migration_id', $data);

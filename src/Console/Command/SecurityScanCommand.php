@@ -39,7 +39,7 @@ final class SecurityScanCommand extends Command
             return Command::INVALID;
         }
 
-        $result = $this->scanner->scan($source);
+        $result = $this->scanner->scanSecurity($source);
         $io->section('Security Scan');
         $io->writeln(json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
